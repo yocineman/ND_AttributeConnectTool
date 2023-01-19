@@ -10,6 +10,7 @@ import PySide2.QtWidgets as QtWidgets
 import PySide2.QtGui as QtGui
 import PySide2.QtCore as QtCore
 import maya.cmds as cmds
+import webbrowser
 VERSION = 0.1
 try:
     TOOLDIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,175 +18,200 @@ except:
     TOOLDIR = r'Y:\tool\ND_Tools\DCC\AttributeConnectTool'
 
 
-def connecting(src, dst, flags):
-    if flags[0] == True:
+def undoable(func):
+    def _undoable(*args):
         try:
-            cmds.connectAttr('{}.tx'.format(src), '{}.tx'.format(dst))
-        except:
-            pass
-    if flags[1] == True:
-        try:
-            cmds.connectAttr('{}.ty'.format(src), '{}.ty'.format(dst))
-        except:
-            pass
-    if flags[2] == True:
-        try:
-            cmds.connectAttr('{}.tz'.format(src), '{}.tz'.format(dst))
-        except:
-            pass
-    if flags[3] == True:
-        try:
-            cmds.connectAttr('{}.rx'.format(src), '{}.rx'.format(dst))
-        except:
-            pass
-    if flags[4] == True:
-        try:
-            cmds.connectAttr('{}.ry'.format(src), '{}.ry'.format(dst))
-        except:
-            pass
-    if flags[5] == True:
-        try:
-            cmds.connectAttr('{}.rz'.format(src), '{}.rz'.format(dst))
-        except:
-            pass
-    if flags[6] == True:
-        try:
-            cmds.connectAttr('{}.sx'.format(src), '{}.sx'.format(dst))
-        except:
-            pass
-    if flags[7] == True:
-        try:
-            cmds.connectAttr('{}.sy'.format(src), '{}.sy'.format(dst))
-        except:
-            pass
-    if flags[8] == True:
-        try:
-            cmds.connectAttr('{}.sz'.format(src), '{}.sz'.format(dst))
-        except:
-            pass
-    if flags[9] == True:
-        try:
-            cmds.connectAttr('{}.shear'.format(src), '{}.shear'.format(dst))
-        except:
-            pass
+            cmds.undoInfo(openChunk=True)
+            return func(*args)
+        finally:
+            cmds.undoInfo(closeChunk=True)
+    return _undoable
 
 
-def break_connecting(src, dst, flags):
-    if flags[0] == True:
-        try:
-            cmds.disconnectAttr('{}.tx'.format(src), '{}.tx'.format(dst))
-        except Exception as e:
-            pass
-    if flags[1] == True:
-        try:
-            cmds.disconnectAttr('{}.ty'.format(src), '{}.ty'.format(dst))
-        except:
-            pass
-    if flags[2] == True:
-        try:
-            cmds.disconnectAttr('{}.tz'.format(src), '{}.tz'.format(dst))
-        except:
-            pass
-    if flags[3] == True:
-        try:
-            cmds.disconnectAttr('{}.rx'.format(src), '{}.rx'.format(dst))
-        except:
-            pass
-    if flags[4] == True:
-        try:
-            cmds.disconnectAttr('{}.ry'.format(src), '{}.ry'.format(dst))
-        except:
-            pass
-    if flags[5] == True:
-        try:
-            cmds.disconnectAttr('{}.rz'.format(src), '{}.rz'.format(dst))
-        except:
-            pass
-    if flags[6] == True:
-        try:
-            cmds.disconnectAttr('{}.sx'.format(src), '{}.sx'.format(dst))
-        except:
-            pass
-    if flags[7] == True:
-        try:
-            cmds.disconnectAttr('{}.sy'.format(src), '{}.sy'.format(dst))
-        except:
-            pass
-    if flags[8] == True:
-        try:
-            cmds.disconnectAttr('{}.sz'.format(src), '{}.sz'.format(dst))
-        except:
-            pass
-    if flags[9] == True:
-        try:
-            cmds.disconnectAttr('{}.shear'.format(src),
-                                '{}.shear'.format(dst))
-        except Exception as e:
-            print(e)
-
-
-def connect_inner_node(src, dst, flags):
-    if True in flags[0:2]:
-        inter_node = cmds.createNode('plusMinusAverage')
-        dif_vec = get_diff(src, dst, 'translate')
-        cmds.setAttr(
-            inter_node+'.input3D[1]', dif_vec[0], dif_vec[1], dif_vec[2], type='double3')
+def connecting(src, dsts, flags):
+    for dst in dsts:
         if flags[0] == True:
-            cmds.connectAttr('{}.translateX'.format(src),
-                             '{}.input3D[0].input3Dx'.format(inter_node), f=True)
-            cmds.connectAttr('{}.output3Dx'.format(inter_node),
-                             '{}.translateX'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.tx'.format(src), '{}.tx'.format(dst))
+            except Exception as e:
+                print(e)
         if flags[1] == True:
-            cmds.connectAttr('{}.translateY'.format(src),
-                             '{}.input3D[0].input3Dy'.format(inter_node), f=True)
-            cmds.connectAttr('{}.output3Dy'.format(inter_node),
-                             '{}.translateY'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.ty'.format(src), '{}.ty'.format(dst))
+            except:
+                pass
         if flags[2] == True:
-            cmds.connectAttr('{}.translateZ'.format(src),
-                             '{}.input3D[0].input3Dz'.format(inter_node), f=True)
-            cmds.connectAttr('{}.output3Dz'.format(inter_node),
-                             '{}.translateZ'.format(dst), f=True)
-
-    if True in flags[3:5]:
-        inter_node = cmds.createNode('plusMinusAverage')
-        dif_vec = get_diff(src, dst, 'rotate')
-        cmds.setAttr(
-            inter_node+'.input3D[1]', dif_vec[0], dif_vec[1], dif_vec[2], type='double3')
+            try:
+                cmds.connectAttr('{}.tz'.format(src), '{}.tz'.format(dst))
+            except:
+                pass
         if flags[3] == True:
-            cmds.connectAttr('{}.rotateX'.format(src),
-                             '{}.input3D[0].input3Dx'.format(inter_node), f=True)
-            cmds.connectAttr('{}.output3Dx'.format(inter_node),
-                             '{}.rotateX'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.rx'.format(src), '{}.rx'.format(dst))
+            except:
+                pass
         if flags[4] == True:
-            cmds.connectAttr('{}.rotateY'.format(src),
-                             '{}.input3D[0].input3Dy'.format(inter_node), f=True)
-            cmds.connectAttr('{}.output3Dy'.format(inter_node),
-                             '{}.rotateY'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.ry'.format(src), '{}.ry'.format(dst))
+            except:
+                pass
         if flags[5] == True:
-            cmds.connectAttr('{}.rotateZ'.format(src),
-                             '{}.input3D[0].input3Dz'.format(inter_node), f=True)
-            cmds.connectAttr('{}.output3Dz'.format(inter_node),
-                             '{}.rotateZ'.format(dst), f=True)
-    if True in flags[6:8]:
-        inter_node = cmds.createNode('multiplyDivide')
-        dif_vec = get_diff(src, dst, 'scale')
-        cmds.setAttr(inter_node+'.input2',
-                     dif_vec[0], dif_vec[1], dif_vec[2], type='double3')
+            try:
+                cmds.connectAttr('{}.rz'.format(src), '{}.rz'.format(dst))
+            except:
+                pass
         if flags[6] == True:
-            cmds.connectAttr('{}.scaleX'.format(src),
-                             '{}X.input1'.format(inter_node), f=True)
-            cmds.connectAttr('{}.outputX'.format(inter_node),
-                             '{}.scaleX'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.sx'.format(src), '{}.sx'.format(dst))
+            except:
+                pass
         if flags[7] == True:
-            cmds.connectAttr('{}.scaleY'.format(src),
-                             '{}Y.input1'.format(inter_node), f=True)
-            cmds.connectAttr('{}.outputY'.format(inter_node),
-                             '{}.scaleY'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.sy'.format(src), '{}.sy'.format(dst))
+            except:
+                pass
         if flags[8] == True:
-            cmds.connectAttr('{}.scaleZ'.format(src),
-                             '{}Z.input1'.format(inter_node), f=True)
-            cmds.connectAttr('{}.outputZ'.format(inter_node),
-                             '{}.scaleZ'.format(dst), f=True)
+            try:
+                cmds.connectAttr('{}.sz'.format(src), '{}.sz'.format(dst))
+            except:
+                pass
+        if flags[9] == True:
+            try:
+                cmds.connectAttr('{}.shear'.format(src), '{}.shear'.format(dst))
+            except:
+                pass
+
+
+def break_connecting(src, dsts, flags):
+    for dst in dsts:
+        if flags[0] == True:
+            try:
+                cmds.disconnectAttr('{}.tx'.format(src), '{}.tx'.format(dst))
+            except Exception as e:
+                pass
+        if flags[1] == True:
+            try:
+                cmds.disconnectAttr('{}.ty'.format(src), '{}.ty'.format(dst))
+            except:
+                pass
+        if flags[2] == True:
+            try:
+                cmds.disconnectAttr('{}.tz'.format(src), '{}.tz'.format(dst))
+            except:
+                pass
+        if flags[3] == True:
+            try:
+                cmds.disconnectAttr('{}.rx'.format(src), '{}.rx'.format(dst))
+            except:
+                pass
+        if flags[4] == True:
+            try:
+                cmds.disconnectAttr('{}.ry'.format(src), '{}.ry'.format(dst))
+            except:
+                pass
+        if flags[5] == True:
+            try:
+                cmds.disconnectAttr('{}.rz'.format(src), '{}.rz'.format(dst))
+            except:
+                pass
+        if flags[6] == True:
+            try:
+                cmds.disconnectAttr('{}.sx'.format(src), '{}.sx'.format(dst))
+            except:
+                pass
+        if flags[7] == True:
+            try:
+                cmds.disconnectAttr('{}.sy'.format(src), '{}.sy'.format(dst))
+            except:
+                pass
+        if flags[8] == True:
+            try:
+                cmds.disconnectAttr('{}.sz'.format(src), '{}.sz'.format(dst))
+            except:
+                pass
+        if flags[9] == True:
+            try:
+                cmds.disconnectAttr('{}.shear'.format(src),
+                                    '{}.shear'.format(dst))
+            except Exception as e:
+                print(e)
+
+
+def connect_inner_node(src, dsts, flags):
+    for dst in dsts:
+        if True in flags[0:2]:
+            inter_node = cmds.createNode('plusMinusAverage')
+            cmds.addAttr(inter_node, longName='src', dt='string')
+            cmds.addAttr(inter_node, longName='dst', dt='string')
+            cmds.setAttr('{}.src'.format(inter_node), src, type='string')
+            cmds.setAttr('{}.dst'.format(inter_node), dst, type='string')
+            dif_vec = get_diff(src, dst, 'translate')
+            cmds.setAttr(
+                inter_node+'.input3D[1]', dif_vec[0], dif_vec[1], dif_vec[2], type='double3')
+            if flags[0] == True:
+                cmds.connectAttr('{}.translateX'.format(src),
+                                '{}.input3D[0].input3Dx'.format(inter_node), f=True)
+                cmds.connectAttr('{}.output3Dx'.format(inter_node),
+                                '{}.translateX'.format(dst), f=True)
+            if flags[1] == True:
+                cmds.connectAttr('{}.translateY'.format(src),
+                                '{}.input3D[0].input3Dy'.format(inter_node), f=True)
+                cmds.connectAttr('{}.output3Dy'.format(inter_node),
+                                '{}.translateY'.format(dst), f=True)
+            if flags[2] == True:
+                cmds.connectAttr('{}.translateZ'.format(src),
+                                '{}.input3D[0].input3Dz'.format(inter_node), f=True)
+                cmds.connectAttr('{}.output3Dz'.format(inter_node),
+                                '{}.translateZ'.format(dst), f=True)
+
+        if True in flags[3:5]:
+            inter_node = cmds.createNode('plusMinusAverage')
+            cmds.addAttr(inter_node, longName='src', dt='string')
+            cmds.addAttr(inter_node, longName='dst', dt='string')
+            cmds.setAttr('{}.src'.format(inter_node), src, type='string')
+            cmds.setAttr('{}.dst'.format(inter_node), dst, type='string')
+            dif_vec = get_diff(src, dst, 'rotate')
+            cmds.setAttr(
+                inter_node+'.input3D[1]', dif_vec[0], dif_vec[1], dif_vec[2], type='double3')
+            if flags[3] == True:
+                cmds.connectAttr('{}.rotateX'.format(src),
+                                '{}.input3D[0].input3Dx'.format(inter_node), f=True)
+                cmds.connectAttr('{}.output3Dx'.format(inter_node),
+                                '{}.rotateX'.format(dst), f=True)
+            if flags[4] == True:
+                cmds.connectAttr('{}.rotateY'.format(src),
+                                '{}.input3D[0].input3Dy'.format(inter_node), f=True)
+                cmds.connectAttr('{}.output3Dy'.format(inter_node),
+                                '{}.rotateY'.format(dst), f=True)
+            if flags[5] == True:
+                cmds.connectAttr('{}.rotateZ'.format(src),
+                                '{}.input3D[0].input3Dz'.format(inter_node), f=True)
+                cmds.connectAttr('{}.output3Dz'.format(inter_node),
+                                '{}.rotateZ'.format(dst), f=True)
+        if True in flags[6:8]:
+            inter_node = cmds.createNode('multiplyDivide')
+            cmds.addAttr(inter_node, longName='src', dt='string')
+            cmds.addAttr(inter_node, longName='dst', dt='string')
+            cmds.setAttr('{}.src'.format(inter_node), src, type='string')
+            cmds.setAttr('{}.dst'.format(inter_node), dst, type='string')
+            dif_vec = get_diff(src, dst, 'scale')
+            cmds.setAttr(inter_node+'.input2',
+                        dif_vec[0], dif_vec[1], dif_vec[2], type='double3')
+            if flags[6] == True:
+                cmds.connectAttr('{}.scaleX'.format(src),
+                                '{}.input1.input1X'.format(inter_node), f=True)
+                cmds.connectAttr('{}.outputX'.format(inter_node),
+                                '{}.scaleX'.format(dst), f=True)
+            if flags[7] == True:
+                cmds.connectAttr('{}.scaleY'.format(src),
+                                '{}.input1.input1Y'.format(inter_node), f=True)
+                cmds.connectAttr('{}.outputY'.format(inter_node),
+                                '{}.scaleY'.format(dst), f=True)
+            if flags[8] == True:
+                cmds.connectAttr('{}.scaleZ'.format(src),
+                                '{}.input1.input1Z'.format(inter_node), f=True)
+                cmds.connectAttr('{}.outputZ'.format(inter_node),
+                                '{}.scaleZ'.format(dst), f=True)
 
 
 class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
@@ -196,7 +222,11 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
         self.ui_path = os.path.join(TOOLDIR, ui_name)
         self.ui = QUiLoader().load(self.ui_path)
         self.setCentralWidget(self.ui)
+        self.setWindowTitle('Attribute Connect Tool')
         self.ui_connect()
+        help_path = ('https://onedrive.live.com/redir?resid=58BD60C626427A2A%21105&authkey=%21AMSN23DVAc9fKa0&page=View&wd=target%28Setup.one%7C89c694e3-7806-4dff-9d60-92e84a7e167b%2FAttribute%20Connect%20Tool%7C28a18493-c134-41e6-81e0-91bd40ab0b04%2F%29&wdorigin=703')
+        self.ui.actionHelp_open_webbrowser.triggered.connect(
+            lambda: webbrowser.open(help_path))
 
     def ui_connect(self):
         self.ui.get_A_button.clicked.connect(self.get_A_button_clicked)
@@ -241,7 +271,7 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
             self.parent_const_button_clicked)
 
     def get_A_button_clicked(self):
-        # self.ui.list_A.clear()
+        # self.ui.listA.clear()
         objs = cmds.ls(sl=True)
         for obj in objs:
             print(obj)
@@ -254,11 +284,20 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
             self.ui.list_B.addItem(obj)
 
     def clear_A_button_clicked(self):
-        self.ui.list_A.clear()
+        # self.ui.list_A.clear()
+        row = self.ui.list_A.currentRow()
+        self.ui.list_A.takeItem(row)
+        # for item in self.ui.list_A:
+        #     self.listA.takeItem(self.listA.row(item))
 
     def clear_B_button_clicked(self):
-        self.ui.list_B.clear()
+        # self.ui.list_B.clear()
+        row = self.ui.list_B.currentRow()
+        self.ui.list_B.takeItem(row)
+        # for item in self.ui.list_B:
+        #     self.listB.takeItem(self.listB.row(item))
 
+    @undoable
     def connect_button_clicked(self):
         flags = [
             self.ui.connect_tx.isChecked(),
@@ -272,18 +311,23 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
             self.ui.connect_sz.isChecked(),
             self.ui.connect_shear.isChecked(),
         ]
-        for i in range(self.ui.list_A.count()):
-            try:
-                src_obj = self.ui.list_A.itemAt(i, 0).text()
-                dst_obj = self.ui.list_B.itemAt(i, 0).text()
-                pre_relation = self.ui.connect_pre.isChecked()
-                if pre_relation == False:
-                    connecting(src_obj, dst_obj, flags)
-                else:
-                    connect_inner_node(src_obj, dst_obj, flags)
-            except:
-                pass
+        # for i in range(self.ui.list_A.count()):
+        try:
+            # src_obj = self.ui.list_A.itemAt(i, 0).text()
+            src_obj = self.ui.list_A.currentItem().text()
+            dst_objs = []
+            for obj in self.ui.list_B.selectedItems():
+                dst_objs.append(obj.text())
+            # dst_obj = self.ui.list_B.itemAt(i, 0).text()
+            pre_relation = self.ui.connect_pre.isChecked()
+            if pre_relation == False:
+                connecting(src_obj, dst_objs, flags)
+            else:
+                connect_inner_node(src_obj, dst_objs, flags)
+        except Exception as e:
+            print(e)
 
+    @undoable
     def break_button_clicked(self):
         flags = [
             self.ui.break_tx.isChecked(),
@@ -300,13 +344,18 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
         for i in range(self.ui.list_A.count()):
             try:
                 src_obj = self.ui.list_A.itemAt(i, 0).text()
-                dst_obj = self.ui.list_B.itemAt(i, 0).text()
-                break_connecting(src_obj, dst_obj, flags)
-                # if self.ui.break_pre.isChecked():
-                #     break_matrix_parent_constraint(src_obj, dst_obj)
-            except:
-                pass
+                # dst_obj = self.ui.list_B.itemAt(i, 0).text()
+                dst_objs = []
+                for obj in self.ui.list_B.selectedItems():
+                    dst_objs.append(obj.text())
+                if self.ui.break_pre.isChecked() == False:
+                    break_connecting(src_obj, dst_objs, flags)
+                else:
+                    break_matrix_parent_constraint(src_obj, dst_objs)
+            except Exception as e:
+                print(e)
 
+    @undoable
     def parent_const_button_clicked(self):
         for i in range(self.ui.list_A.count()):
             try:
@@ -491,43 +540,44 @@ def get_diff(src, dst, attr='translate'):
         return None
 
 
-def matrix_parent_constraint(src, dst, is_preserve):
-    # check plugin
-    if not cmds.pluginInfo('matrixNodes', q=True, l=True):
-        cmds.loadPlugin('matrixNodes')
+def matrix_parent_constraint(src, dsts, mo):
+    for dst in dsts:
+        # Constraint
+        if not cmds.pluginInfo('matrixNodes', q=True, l=True):
+            cmds.loadPlugin('matrixNodes')
 
-    # create preserve(relative) matrix(; composeMatrix)
-    if is_preserve:
-        t_dif_vec = get_diff(src, dst, 'translate')
-        r_dif_vec = get_diff(src, dst, 'rotate')
-        s_dif_vec = get_diff(src, dst, 'scale')
-        compose_matrix = cmds.createNode('composeMatrix')
-        cmds.setAttr(compose_matrix+'.inputTranslate',
-                     t_dif_vec[0], t_dif_vec[1], t_dif_vec[2], type='double3')
-        cmds.setAttr(compose_matrix+'.inputRotate',
-                     r_dif_vec[0], r_dif_vec[1], r_dif_vec[2], type='double3')
-        cmds.setAttr(compose_matrix+'.inputScale',
-                     s_dif_vec[0], s_dif_vec[1], s_dif_vec[2], type='double3')
+        # create preserve(relative) matrix(; composeMatrix)
+        if mo:
+            t_dif_vec = get_diff(src, dst, 'translate')
+            r_dif_vec = get_diff(src, dst, 'rotate')
+            s_dif_vec = get_diff(src, dst, 'scale')
+            compose_matrix = cmds.createNode('composeMatrix')
+            cmds.setAttr(compose_matrix+'.inputTranslate',
+                        t_dif_vec[0], t_dif_vec[1], t_dif_vec[2], type='double3')
+            cmds.setAttr(compose_matrix+'.inputRotate',
+                        r_dif_vec[0], r_dif_vec[1], r_dif_vec[2], type='double3')
+            cmds.setAttr(compose_matrix+'.inputScale',
+                        s_dif_vec[0], s_dif_vec[1], s_dif_vec[2], type='double3')
 
-    mult_matrix = cmds.createNode('multMatrix')
-    decompose_matrix = cmds.createNode('decomposeMatrix')
+        mult_matrix = cmds.createNode('multMatrix')
+        decompose_matrix = cmds.createNode('decomposeMatrix')
 
-    if is_preserve:
-        cmds.connectAttr(compose_matrix+'.outputMatrix',
-                         mult_matrix+'.matrixIn[0]')
-    cmds.connectAttr(src+'.worldMatrix',
-                     mult_matrix+'.matrixIn[1]')
-    cmds.connectAttr(mult_matrix+'.matrixSum',
-                     decompose_matrix+'.inputMatrix')
-    try:
-        cmds.connectAttr(decompose_matrix +
-                         '.outputTranslate', dst+'.translate')
-        cmds.connectAttr(decompose_matrix +
-                         '.outputRotate',    dst+'.rotate')
-        cmds.connectAttr(dst+'.parentInverseMatrix[0]',
-                         mult_matrix+'.matrixIn[2]')
-    except:
-        pass
+        if mo:
+            cmds.connectAttr(compose_matrix+'.outputMatrix',
+                            mult_matrix+'.matrixIn[0]')
+        cmds.connectAttr(src+'.worldMatrix',
+                        mult_matrix+'.matrixIn[1]')
+        cmds.connectAttr(mult_matrix+'.matrixSum',
+                        decompose_matrix+'.inputMatrix')
+        try:
+            cmds.connectAttr(decompose_matrix +
+                            '.outputTranslate', dst+'.translate')
+            cmds.connectAttr(decompose_matrix +
+                            '.outputRotate',    dst+'.rotate')
+            cmds.connectAttr(dst+'.parentInverseMatrix[0]',
+                            mult_matrix+'.matrixIn[2]')
+        except:
+            pass
 
 
 def search_mid_obj(src, dst):
@@ -540,34 +590,24 @@ def search_mid_obj(src, dst):
     return result_objs
 
 
-def search_trace_matrix(src, dst):
-    print(dst)
-    decompose_matrix_list = cmds.listConnections(
-        dst, s=True, type='decomposeMatrix')
-    if len(decompose_matrix_list) == None:
-        return []
-    result_list = []
-    # dec>mult>comp
-    for decompose_matrix in decompose_matrix_list:
-        mult_matrix_list = cmds.listConnections(
-            decompose_matrix, s=True, type='multMatrix')
-        for mult_matrix in mult_matrix_list:
-            print(mult_matrix)
-            if src not in cmds.listConnections(mult_matrix, s=True):
-                continue
-            compose_matrix_list = cmds.listConnections(
-                mult_matrix, s=True, type='composeMatrix')
-            if len(compose_matrix_list) != 0:
-                result_list.extend(compose_matrix_list)
-                result_list.append(mult_matrix)
-                result_list.append(decompose_matrix)
-    result_list = list(set(result_list))
-    return result_list
-
-
-def break_matrix_parent_constraint(src, dst):
-    matrix_chain_list = search_trace_matrix(src, dst)
-    cmds.delete(matrix_chain_list)
+def break_matrix_parent_constraint(src, dsts):
+    for dst in dsts:
+        pm_ave_list = cmds.ls(type='plusMinusAverage')
+        for pm_ave in pm_ave_list:
+            try:
+                if cmds.getAttr('{}.src'.format(pm_ave)) == src:
+                    if cmds.getAttr('{}.dst'.format(pm_ave)) == dst:
+                        cmds.delete(pm_ave)
+            except:
+                pass
+        mu_di_list = cmds.ls(type='multiplyDivide')
+        for mu_di in mu_di_list:
+            try:
+                if cmds.getAttr('{}.src'.format(mu_di)) == src:
+                    if cmds.getAttr('{}.dst'.format(mu_di)) == dst:
+                        cmds.delete(mu_di)
+            except:
+                pass
 
 
 def runs():
