@@ -11,7 +11,7 @@ import PySide2.QtGui as QtGui
 import PySide2.QtCore as QtCore
 import maya.cmds as cmds
 import webbrowser
-VERSION = 0.1
+VERSION = 1.0
 try:
     TOOLDIR = os.path.dirname(os.path.abspath(__file__))
 except:
@@ -228,6 +228,9 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
         self.ui.actionHelp_open_webbrowser.triggered.connect(
             lambda: webbrowser.open(help_path))
 
+        self.last_A = -1
+        self.last_B = -1
+
     def ui_connect(self):
         self.ui.get_A_button.clicked.connect(self.get_A_button_clicked)
         self.ui.get_B_button.clicked.connect(self.get_B_button_clicked)
@@ -267,25 +270,37 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
         self.ui.clear_A_button.clicked.connect(self.clear_A_button_clicked)
         self.ui.clear_B_button.clicked.connect(self.clear_B_button_clicked)
 
+        self.ui.list_A.clicked.connect(self.list_A_clicked)
+        # self.ui.list_B.clicked.connect(self.list_B_clicked)
+
         self.ui.parent_const_button.clicked.connect(
             self.parent_const_button_clicked)
 
     def get_A_button_clicked(self):
         # self.ui.listA.clear()
         objs = cmds.ls(sl=True)
+        list_A_items = []
+        for x in range(self.ui.list_A.count()):
+            list_A_items.append(self.ui.list_A.item(x).text())
         for obj in objs:
-            print(obj)
-            self.ui.list_A.addItem(obj)
+            if obj not in list_A_items:
+                self.ui.list_A.addItem(obj)
 
     def get_B_button_clicked(self):
         # self.ui.list_B.clear()
         objs = cmds.ls(sl=True)
+        list_B_items = []
+        for x in range(self.ui.list_B.count()):
+            list_B_items.append(self.ui.list_B.item(x).text())
         for obj in objs:
-            self.ui.list_B.addItem(obj)
+            if obj not in list_B_items:
+                self.ui.list_B.addItem(obj)
 
     def clear_A_button_clicked(self):
         # self.ui.list_A.clear()
         row = self.ui.list_A.currentRow()
+        if row == -1:
+            self.ui.list_A.clear()
         self.ui.list_A.takeItem(row)
         # for item in self.ui.list_A:
         #     self.listA.takeItem(self.listA.row(item))
@@ -293,9 +308,41 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
     def clear_B_button_clicked(self):
         # self.ui.list_B.clear()
         row = self.ui.list_B.currentRow()
-        self.ui.list_B.takeItem(row)
+        # 選択中のアイテムを取得
+        list_B_selected_item_rows = []
+        for x in range(self.ui.list_B.count()):
+            if self.ui.list_B.item(x).isSelected() == True:
+                list_B_selected_item_rows.append(x)
+        list_B_selected_item_rows.sort()
+        if row == -1:
+            self.ui.list_B.clear()
+        else:
+            if row in list_B_selected_item_rows:
+                for _row in list_B_selected_item_rows[::-1]:
+                    self.ui.list_B.takeItem(_row)
+            else:
+                self.ui.list_B.clear()
+
+        # self.ui.list_B.takeItem(row)
         # for item in self.ui.list_B:
         #     self.listB.takeItem(self.listB.row(item))
+
+    def list_A_clicked(self):
+        row = self.ui.list_A.currentRow()
+        if self.last_A == row:
+            self.ui.list_A.item(row).setSelected(False)
+            self.ui.list_A.setCurrentRow(-1)
+        self.last_A = self.ui.list_A.currentRow()
+
+        # _list_item = self.ui.list_A.item(row)
+        # _state = _list_item.isSelected()
+        # if _state == False:
+        #     _list_item.setSelected(True)
+        # elif _state == True:
+        #     _list_item.setSelected(False)
+
+    def list_B_clicked(self):
+        self.ui.list_B.selectionModel().clear()
 
     @undoable
     def connect_button_clicked(self):
@@ -341,32 +388,28 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
             self.ui.break_sz.isChecked(),
             self.ui.break_shear.isChecked(),
         ]
-        for i in range(self.ui.list_A.count()):
-            try:
-                src_obj = self.ui.list_A.itemAt(i, 0).text()
-                # dst_obj = self.ui.list_B.itemAt(i, 0).text()
-                dst_objs = []
-                for obj in self.ui.list_B.selectedItems():
-                    dst_objs.append(obj.text())
-                if self.ui.break_pre.isChecked() == False:
-                    break_connecting(src_obj, dst_objs, flags)
-                else:
-                    break_matrix_parent_constraint(src_obj, dst_objs)
-            except Exception as e:
-                print(e)
+
+        src_obj = self.ui.list_A.currentItem().text()
+        dst_objs = []
+        for obj in self.ui.list_B.selectedItems():
+            dst_objs.append(obj.text())
+
+        if self.ui.break_pre.isChecked() == False:
+            break_connecting(src_obj, dst_objs, flags)
+        else:
+            break_matrix_parent_constraint(src_obj, dst_objs)
 
     @undoable
     def parent_const_button_clicked(self):
-        for i in range(self.ui.list_A.count()):
-            try:
-                src_obj = self.ui.list_A.itemAt(i, 0).text()
-                dst_obj = self.ui.list_B.itemAt(i, 0).text()
-                mo = self.ui.mo_check.isChecked()
-                matrix_parent_constraint(
+        src_obj = self.ui.list_A.currentItem().text()
+        dst_objs = []
+        for obj in self.ui.list_B.selectedItems():
+            dst_objs.append(obj.text())
+
+        mo = self.ui.mo_check.isChecked()
+        for dst_obj in dst_objs:
+            matrix_parent_constraint(
                     src_obj, dst_obj, mo)
-                print(src_obj, dst_obj)
-            except Exception as e:
-                print(e)
 
     def connect_all_checked(self):
         if self.ui.connect_all.isChecked():
