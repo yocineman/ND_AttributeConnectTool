@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 # inopoa_Attribute_Connector
 import os
-from PySide2.QtWidgets import *
-from PySide2.QtUiTools import QUiLoader
-from PySide2.QtGui import *
-from PySide2.QtCore import *
-from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-import PySide2.QtWidgets as QtWidgets
-import PySide2.QtGui as QtGui
-import PySide2.QtCore as QtCore
+try:
+    from PySide6.QtWidgets import *
+    from PySide6.QtUiTools import QUiLoader
+    from PySide6.QtGui import *
+    from PySide6.QtCore import *    
+    import PySide6.QtWidgets as QtWidgets
+except:
+    from PySide2.QtWidgets import *
+    from PySide2.QtUiTools import QUiLoader
+    from PySide2.QtGui import *
+    from PySide2.QtCore import *
+    import PySide2.QtWidgets as QtWidgets
+
 import maya.cmds as cmds
 import webbrowser
-VERSION = 1.0
+from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
+VERSION = 1.2.0
 try:
     TOOLDIR = os.path.dirname(os.path.abspath(__file__))
 except:
@@ -28,8 +34,11 @@ def undoable(func):
     return _undoable
 
 
-def connecting(src, dsts, flags):
-    for dst in dsts:
+def connecting(srcs, dsts, flags):
+    if len(srcs) == 1:
+        srcs = [srcs[0]]*len(dsts)
+    
+    for src, dst in zip(srcs, dsts):
         if flags[0] == True:
             try:
                 cmds.connectAttr('{}.tx'.format(src), '{}.tx'.format(dst))
@@ -78,12 +87,13 @@ def connecting(src, dsts, flags):
         if flags[9] == True:
             try:
                 cmds.connectAttr('{}.shear'.format(src), '{}.shear'.format(dst))
-            except:
-                pass
+            except Exception as e:  
+                print(e)
 
-
-def break_connecting(src, dsts, flags):
-    for dst in dsts:
+def break_connecting(srcs, dsts, flags):
+    if len(srcs) == 1:
+        srcs = [srcs[0]]*len(dsts)
+    for src, dst in zip(srcs, dsts):
         if flags[0] == True:
             try:
                 cmds.disconnectAttr('{}.tx'.format(src), '{}.tx'.format(dst))
@@ -138,7 +148,10 @@ def break_connecting(src, dsts, flags):
 
 
 def connect_inner_node(src, dsts, flags):
-    for dst in dsts:
+    if len(srcs) == 1:
+        srcs = [srcs[0]]*len(dsts)
+    
+    for src, dst in zip(srcs, dsts):
         if True in flags[0:2]:
             inter_node = cmds.createNode('plusMinusAverage')
             cmds.addAttr(inter_node, longName='src', dt='string')
@@ -222,7 +235,7 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
         self.ui_path = os.path.join(TOOLDIR, ui_name)
         self.ui = QUiLoader().load(self.ui_path)
         self.setCentralWidget(self.ui)
-        self.setWindowTitle('Attribute Connect Tool')
+        self.setWindowTitle('Attribute Connect Tool {}'.format(VERSION) )
         self.ui_connect()
         # help_path = ('https://onedrive.live.com/redir?resid=58BD60C626427A2A%21105&authkey=%21AMSN23DVAc9fKa0&page=View&wd=target%28Setup.one%7C89c694e3-7806-4dff-9d60-92e84a7e167b%2FAttribute%20Connect%20Tool%7C28a18493-c134-41e6-81e0-91bd40ab0b04%2F%29&wdorigin=703')
         help_path = ('https://otakendesigncojp.sharepoint.com/sites/RigDevelopment/_layouts/OneNote.aspx?id=%2Fsites%2FRigDevelopment%2FShared%20Documents%2FOneNotes%2FNTools&wd=target%28Setup.one%7C3B3B44FA-7B63-453A-882C-EBCEACF146D5%2FAttribute%20Connect%20Tool%7C28A18493-C134-41E6-81E0-91BD40AB0B04%2F%29')
@@ -360,20 +373,30 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
             self.ui.connect_shear.isChecked(),
         ]
         # for i in range(self.ui.list_A.count()):
-        try:
-            # src_obj = self.ui.list_A.itemAt(i, 0).text()
-            src_obj = self.ui.list_A.currentItem().text()
-            dst_objs = []
-            for obj in self.ui.list_B.selectedItems():
-                dst_objs.append(obj.text())
-            # dst_obj = self.ui.list_B.itemAt(i, 0).text()
-            pre_relation = self.ui.connect_pre.isChecked()
-            if pre_relation == False:
-                connecting(src_obj, dst_objs, flags)
-            else:
-                connect_inner_node(src_obj, dst_objs, flags)
-        except Exception as e:
-            print(e)
+        # src_obj = self.ui.list_A.itemAt(i, 0).text()
+        # src_obj = self.ui.list_A.curr entItem().text()
+
+        src_objs = []
+        # for obj in self.ui.list_A.selectedItems():
+        # src_objs.append(obj.text())
+        for i in range(self.ui.list_A.count()):
+            if self.ui.list_A.item(i).isSelected() == True:
+                src_objs.append(self.ui.list_A.item(i).text())
+
+        dst_objs = []
+        for i in range(self.ui.list_B.count()):
+            if self.ui.list_B.item(i).isSelected() == True:
+                dst_objs.append(self.ui.list_B.item(i).text())
+
+        if len(src_objs) > 1 and len(src_objs) != len(dst_objs):
+            print('Error: The number of source objects is different from the number of destination objects.')
+            return
+
+        pre_relation = self.ui.connect_pre.isChecked()
+        if pre_relation == False:
+            connecting(src_objs, dst_objs, flags)
+        else:
+            connect_inner_node(src_objs, dst_objs, flags)
 
     @undoable
     def break_button_clicked(self):
@@ -390,15 +413,22 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
             self.ui.break_shear.isChecked(),
         ]
 
-        src_obj = self.ui.list_A.currentItem().text()
+        src_objs = []
+        # for obj in self.ui.list_A.selectedItems():
+        # src_objs.append(obj.text())
+        for i in range(self.ui.list_A.count()):
+            if self.ui.list_A.item(i).isSelected() == True:
+                src_objs.append(self.ui.list_A.item(i).text())
+
         dst_objs = []
-        for obj in self.ui.list_B.selectedItems():
-            dst_objs.append(obj.text())
+        for i in range(self.ui.list_B.count()):
+            if self.ui.list_B.item(i).isSelected() == True:
+                dst_objs.append(self.ui.list_B.item(i).text())
 
         if self.ui.break_pre.isChecked() == False:
-            break_connecting(src_obj, dst_objs, flags)
+            break_connecting(src_objs, dst_objs, flags)
         else:
-            break_matrix_parent_constraint(src_obj, dst_objs)
+            break_matrix_parent_constraint(src_objs, dst_objs)
 
     @undoable
     def parent_const_button_clicked(self):
@@ -568,15 +598,15 @@ class AttributeConnectGUI(MayaQWidgetBaseMixin, QtWidgets.QMainWindow):
 
 
 def get_diff(src, dst, attr='translate'):
-    if attr is 'translate':
+    if attr == 'translate':
         src_val = cmds.getAttr(src+'.t')[0]
         dst_val = cmds.getAttr(dst+'.t')[0]
         return (dst_val[0]-src_val[0], dst_val[1]-src_val[1], dst_val[2]-src_val[2])
-    elif attr is 'rotate':
+    elif attr == 'rotate':
         src_val = cmds.getAttr(src+'.r')[0]
         dst_val = cmds.getAttr(dst+'.r')[0]
         return (dst_val[0]-src_val[0], dst_val[1]-src_val[1], dst_val[2]-src_val[2])
-    elif attr is 'scale':
+    elif attr == 'scale':
         src_val = cmds.getAttr(src+'.s')[0]
         dst_val = cmds.getAttr(dst+'.s')[0]
         return (dst_val[0]/src_val[0], dst_val[1]/src_val[1], dst_val[2]/src_val[2])
@@ -584,8 +614,10 @@ def get_diff(src, dst, attr='translate'):
         return None
 
 
-def matrix_parent_constraint(src, dsts, mo):
-    for dst in dsts:
+def matrix_parent_constraint(srcs, dsts, mo):
+    if len(srcs) == 1:
+        srcs = [srcs[0]]*len(dsts)
+    for src, dst in zip(src, dsts):
         # Constraint
         if not cmds.pluginInfo('matrixNodes', q=True, l=True):
             cmds.loadPlugin('matrixNodes')
@@ -634,8 +666,10 @@ def search_mid_obj(src, dst):
     return result_objs
 
 
-def break_matrix_parent_constraint(src, dsts):
-    for dst in dsts:
+def break_matrix_parent_constraint(srcs, dsts):
+    if len(srcs) == 1:
+        srcs = [srcs[0]]*len(dsts)
+    for src, dst in zip(srcs, dsts):
         pm_ave_list = cmds.ls(type='plusMinusAverage')
         for pm_ave in pm_ave_list:
             try:
