@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-# inopoa_Attribute_Connector
+"""
+トランスフォームノードを簡単にコネクションする為のツール
+"""
 import os
 try:
     from PySide6.QtWidgets import *
@@ -17,7 +19,7 @@ except:
 import maya.cmds as cmds
 import webbrowser
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-VERSION = 1.2.0
+VERSION = "1.2.0"
 try:
     TOOLDIR = os.path.dirname(os.path.abspath(__file__))
 except:
